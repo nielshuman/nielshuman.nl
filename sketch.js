@@ -86,7 +86,7 @@ function draw() {
   background(0);
   fill(255, 255, 255, min(255, (0.2*frameCount) ** 2));
   textAlign(CENTER, CENTER);
-  textSize(windowWidth / 12);
+  textSize(windowWidth / 10);
   text('HUMAN', windowWidth / 2, windowHeight / 2);
   // background(0);
   // circle(windowWidth / 2, windowHeight / 2, 100);
