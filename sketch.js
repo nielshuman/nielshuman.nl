@@ -2,6 +2,9 @@ let langton_pixels;
 let WIDTH;
 let HEIGHT;
 let SCALE = 2; // Each logical pixel is 2×2 real pixels (4 real pixels total)
+let lemonMilkMedium;
+let startFrame = Infinity;
+let SPEED = 150;
 let ants = [];
 
 const BLACK = [0, 0, 0, 0];
@@ -37,12 +40,11 @@ class Ant {
     // Flip and turn
     if (this.currentPixelIs(BLACK)) {
       this.setCurrentPixel(WHITE);
-      [this.dx, this.dy] = [-this.dy, this.dx];
+      [this.dx, this.dy] = [this.dy, -this.dx];
 
     } else /* if (this.currentPixelIs(WHITE)) */ {
       this.setCurrentPixel(BLACK);
-      [this.dx, this.dy] = [this.dy, -this.dx];
-
+      [this.dx, this.dy] = [-this.dy, this.dx];
     }
     
     // Move
@@ -69,26 +71,27 @@ function setup() {
   
   langton_pixels = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
   langton_pixels.fill(0); // Initialize all pixels to black transparent
-  
+  setTimeout(() => {
   ants.push(new Ant(
     Math.floor(WIDTH / 2),
     Math.floor(HEIGHT / 2),
     1,
     0
   ));
-
+  startFrame = frameCount;
+}, 3000);
 }
 
 function draw() {
   background(0);
-  // background(0);
-  fill(255);
+  fill(255, 255, 255, min(255, (0.2*frameCount) ** 2));
   textAlign(CENTER, CENTER);
-  textSize(130);
+  textSize(windowWidth / 12);
   text('HUMAN', windowWidth / 2, windowHeight / 2);
+  // background(0);
   // circle(windowWidth / 2, windowHeight / 2, 100);
   // Run multiple iterations per frame for better performance
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < SPEED; i++) {
     for (let ant of ants) {
       ant.move();
     }
@@ -127,8 +130,10 @@ function draw() {
   
   // Display ant's position for debugging
   fill(255, 0, 0);
-  // text(`Ant: (${ant.x}, ${ant.y})`, 10, 20);
-  // text(`Iterations: ${frameCount * 100}`, 10, 40);
+  textSize(12);
+  textAlign(LEFT, TOP);
+  text(`Iterations: ${max(0, (frameCount - startFrame) * SPEED)}`, 10, 10);
+  text(`Ants: ${ants.length}`, 10, 30);
 }
 
 function mousePressed() {
