@@ -1,7 +1,7 @@
 let langton_pixels;
 let WIDTH;
 let HEIGHT;
-let SCALE = 1; // Each logical pixel is 2×2 real pixels (4 real pixels total)
+let SCALE = 2; // Each logical pixel is 2×2 real pixels (4 real pixels total)
 let ants = [];
 
 const BLACK = [0, 0, 0, 0];
@@ -61,11 +61,11 @@ function preload() {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  pixelDensity(1);
+  // pixelDensity(1);
   textFont(lemonMilkMedium);
-  // Adjust dimensions to account for scaling
-  WIDTH = Math.floor(windowWidth / SCALE);
-  HEIGHT = Math.floor(windowHeight / SCALE);
+  // Adjust dimensions to account for scaling and pixel density
+  WIDTH = Math.floor((width * pixelDensity()) / SCALE);
+  HEIGHT = Math.floor((height * pixelDensity()) / SCALE);
   
   langton_pixels = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
   langton_pixels.fill(0); // Initialize all pixels to black transparent
@@ -111,8 +111,8 @@ function draw() {
         for (let dx = 0; dx < SCALE; dx++) {
           const destX = x * SCALE + dx;
           const destY = y * SCALE + dy;
-          if (destX < windowWidth && destY < windowHeight) {
-            const destIdx = (destY * windowWidth + destX) * 4;
+          if (destX < width * pixelDensity() && destY < height * pixelDensity()) {
+            const destIdx = (destY * (width * pixelDensity()) + destX) * 4;
             pixels[destIdx] = langton_pixels[srcIdx];
             pixels[destIdx + 1] = langton_pixels[srcIdx + 1];
             pixels[destIdx + 2] = langton_pixels[srcIdx + 2];
@@ -132,10 +132,10 @@ function draw() {
 }
 
 function mousePressed() {
-  // Add a new ant at the mouse position
+  // Add a new ant at the mouse position, accounting for pixel density
   ants.push(new Ant(
-    Math.floor(mouseX / SCALE),
-    Math.floor(mouseY / SCALE),
+    Math.floor((mouseX * pixelDensity()) / SCALE),
+    Math.floor((mouseY * pixelDensity()) / SCALE),
     1,
     0
   ));
@@ -149,9 +149,9 @@ function mousePressed() {
     const oldHeight = HEIGHT;
     const oldPixels = langton_pixels;
     
-    // Calculate new dimensions
-    WIDTH = Math.floor(windowWidth / SCALE);
-    HEIGHT = Math.floor(windowHeight / SCALE);
+    // Calculate new dimensions accounting for pixel density properly
+    WIDTH = Math.floor((width * pixelDensity()) / SCALE);
+    HEIGHT = Math.floor((height * pixelDensity()) / SCALE);
     
     // Create new pixel array (initialized to 0 by default)
     langton_pixels = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
