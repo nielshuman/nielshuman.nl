@@ -1,13 +1,12 @@
-let langton_pixels;
 let WIDTH;
 let HEIGHT;
-let SCALE; // Each logical pixel is 2×2 real pixels (4 real pixels total)
+let SCALE; // Each logical pixel is SCALE×SCALE real pixels
 let lemonMilkMedium;
 let startFrame = Infinity;
 let SPEED = 150;
 let ants = [];
 
-const BLACK = [0, 0, 0, 0];
+const BLACK = [0, 0, 0, 255];
 const WHITE = [255, 255, 255, 255];
 
 class Ant {
@@ -19,21 +18,38 @@ class Ant {
   }
 
   currentPixelIs(color) {
-    const i = (this.y * WIDTH + this.x) * 4;
+    // Sample the upper-left pixel of the scaled block
+    const realX = this.x * SCALE;
+    const realY = this.y * SCALE;
+    const i = (realY * (width * pixelDensity()) + realX) * 4;
+    
     return (
-      langton_pixels[i] === color[0] &&
-      langton_pixels[i + 1] === color[1] &&
-      langton_pixels[i + 2] === color[2] &&
-      langton_pixels[i + 3] === color[3]
+      pixels[i] === color[0] &&
+      pixels[i + 1] === color[1] &&
+      pixels[i + 2] === color[2] &&
+      pixels[i + 3] === color[3]
     );
   }
 
   setCurrentPixel(color) {
-    const i = (this.y * WIDTH + this.x) * 4;
-    langton_pixels[i] = color[0];
-    langton_pixels[i + 1] = color[1];
-    langton_pixels[i + 2] = color[2];
-    langton_pixels[i + 3] = color[3];
+    // Set all pixels in the SCALE×SCALE block
+    const startX = this.x * SCALE;
+    const startY = this.y * SCALE;
+    
+    for (let dy = 0; dy < SCALE; dy++) {
+      for (let dx = 0; dx < SCALE; dx++) {
+        const realX = startX + dx;
+        const realY = startY + dy;
+        
+        if (realX < width * pixelDensity() && realY < height * pixelDensity()) {
+          const i = (realY * (width * pixelDensity()) + realX) * 4;
+          pixels[i] = color[0];
+          pixels[i + 1] = color[1];
+          pixels[i + 2] = color[2];
+          pixels[i + 3] = color[3];
+        }
+      }
+    }
   }
 
   move() {
@@ -63,25 +79,22 @@ function preload() {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  // pixelDensity(1);
-  SCALE = Math.max(1, pixelDensity()); // Ensure SCALE is at least 1
+  SCALE = Math.max(2, pixelDensity() * 2); // Ensure SCALE is at least 2 for visibility
 
   textFont(lemonMilkMedium);
-  // Adjust dimensions to account for scaling and pixel density
+  // Calculate logical dimensions
   WIDTH = Math.floor((width * pixelDensity()) / SCALE);
   HEIGHT = Math.floor((height * pixelDensity()) / SCALE);
   
-  langton_pixels = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
-  langton_pixels.fill(0); // Initialize all pixels to black transparent
   setTimeout(() => {
-  ants.push(new Ant(
-    Math.floor(WIDTH / 2),
-    Math.floor(HEIGHT / 2),
-    1,
-    0
-  ));
-  startFrame = frameCount;
-}, 3000);
+    ants.push(new Ant(
+      Math.floor(WIDTH / 2),
+      Math.floor(HEIGHT / 2),
+      1,
+      0
+    ));
+    startFrame = frameCount;
+  }, 3000);
 }
 
 function draw() {
@@ -90,8 +103,10 @@ function draw() {
   textAlign(CENTER, CENTER);
   textSize(windowWidth / 10);
   text('HUMAN', windowWidth / 2, windowHeight / 2);
-  // background(0);
-  // circle(windowWidth / 2, windowHeight / 2, 100);
+  
+  // Load pixels once at the beginning
+  loadPixels();
+  
   // Run multiple iterations per frame for better performance
   for (let i = 0; i < SPEED; i++) {
     for (let ant of ants) {
@@ -99,35 +114,7 @@ function draw() {
     }
   }
   
-  loadPixels();
-  
-  // Draw each logical pixel as a SCALE×SCALE square of real pixels
-  for (let y = 0; y < HEIGHT; y++) {
-    for (let x = 0; x < WIDTH; x++) {
-      const srcIdx = (y * WIDTH + x) * 4;
-      
-      if (langton_pixels[srcIdx + 3] === 0) {
-        // If the pixel is transparent, skip it
-        continue;
-      }
-      
-      // Map each logical pixel to a square of real pixels
-      for (let dy = 0; dy < SCALE; dy++) {
-        for (let dx = 0; dx < SCALE; dx++) {
-          const destX = x * SCALE + dx;
-          const destY = y * SCALE + dy;
-          if (destX < width * pixelDensity() && destY < height * pixelDensity()) {
-            const destIdx = (destY * (width * pixelDensity()) + destX) * 4;
-            pixels[destIdx] = langton_pixels[srcIdx];
-            pixels[destIdx + 1] = langton_pixels[srcIdx + 1];
-            pixels[destIdx + 2] = langton_pixels[srcIdx + 2];
-            pixels[destIdx + 3] = langton_pixels[srcIdx + 3];
-          }
-        }
-      }
-    }
-  }
-  
+  // Update pixels once at the end
   updatePixels();
   
   // Display ant's position for debugging
@@ -136,12 +123,14 @@ function draw() {
   textAlign(LEFT, TOP);
   text(`Iterations: ${max(0, (frameCount - startFrame) * SPEED)}`, 10, 10);
   text(`Ants: ${ants.length}`, 10, 30);
+  text(`Scale: ${SCALE}`, 10, 50);
+  text(`Logical Size: ${WIDTH}×${HEIGHT}`, 10, 70);
 }
 
 function mousePressed() {
   const randomDirection = Math.random() < 0.5 ? -1 : 1;
   const xory = Math.random() < 0.5? 0 : 1;
-  // Add a new ant at the mouse position, accounting for pixel density
+  // Add a new ant at the mouse position
   ants.push(new Ant(
     Math.floor((mouseX * pixelDensity()) / SCALE),
     Math.floor((mouseY * pixelDensity()) / SCALE),
@@ -150,31 +139,14 @@ function mousePressed() {
   ));
 }
 
-  function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
-    
-    // Save old dimensions and pixels
-    const oldWidth = WIDTH;
-    const oldHeight = HEIGHT;
-    const oldPixels = langton_pixels;
-    
-    // Calculate new dimensions accounting for pixel density properly
-    WIDTH = Math.floor((width * pixelDensity()) / SCALE);
-    HEIGHT = Math.floor((height * pixelDensity()) / SCALE);
-    
-    // Create new pixel array (initialized to 0 by default)
-    langton_pixels = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
-    
-    // Copy the old pixels to the new array where they overlap
-    for (let y = 0; y < Math.min(oldHeight, HEIGHT); y++) {
-      for (let x = 0; x < Math.min(oldWidth, WIDTH); x++) {
-        const oldIdx = (y * oldWidth + x) * 4;
-        const newIdx = (y * WIDTH + x) * 4;
-        
-        langton_pixels[newIdx] = oldPixels[oldIdx];
-        langton_pixels[newIdx + 1] = oldPixels[oldIdx + 1];
-        langton_pixels[newIdx + 2] = oldPixels[oldIdx + 2];
-        langton_pixels[newIdx + 3] = oldPixels[oldIdx + 3];
-      }
-    }
-  }
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  
+  // Recalculate logical dimensions
+  WIDTH = Math.floor((width * pixelDensity()) / SCALE);
+  HEIGHT = Math.floor((height * pixelDensity()) / SCALE);
+  
+  // Note: When resizing, the existing pixel data will be lost
+  // If you need to preserve it, you'd need to copy the relevant pixels
+  // before the resize and restore them after
+}
