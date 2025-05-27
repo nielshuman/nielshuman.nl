@@ -1,7 +1,7 @@
 let langton_pixels;
 let WIDTH;
 let HEIGHT;
-let SCALE = 2; // Each logical pixel is 2×2 real pixels (4 real pixels total)
+let SCALE; // Each logical pixel is 2×2 real pixels (4 real pixels total)
 let lemonMilkMedium;
 let startFrame = Infinity;
 let SPEED = 150;
@@ -64,6 +64,8 @@ function preload() {
 function setup() {
   createCanvas(windowWidth, windowHeight);
   // pixelDensity(1);
+  SCALE = Math.max(1, pixelDensity()); // Ensure SCALE is at least 1
+
   textFont(lemonMilkMedium);
   // Adjust dimensions to account for scaling and pixel density
   WIDTH = Math.floor((width * pixelDensity()) / SCALE);
@@ -137,12 +139,14 @@ function draw() {
 }
 
 function mousePressed() {
+  const randomDirection = Math.random() < 0.5 ? -1 : 1;
+  const xory = Math.random() < 0.5? 0 : 1;
   // Add a new ant at the mouse position, accounting for pixel density
   ants.push(new Ant(
     Math.floor((mouseX * pixelDensity()) / SCALE),
     Math.floor((mouseY * pixelDensity()) / SCALE),
-    1,
-    0
+    randomDirection * xory,
+    randomDirection * (1 - xory)
   ));
 }
 
